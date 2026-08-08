@@ -10,7 +10,6 @@ A demo-ready stack that keeps your health and gym data on infrastructure you con
 | **Gym tracker** | [wger](https://github.com/wger-project/wger) | Daily lifting, routines, nutrition + Flutter phone app |
 | **Show layer** | Grafana | Join both Postgres databases — no app-to-app sync |
 | **Insurance** | `scripts/backup.sh` | Nightly `pg_dump` so a dead upstream is not a dead archive |
-| **Optional demo media** | [exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) | Exercise GIFs/metadata for demos — not the health store (see [docs/exercises-dataset.md](docs/exercises-dataset.md)) |
 
 ```
 Garmin / Polar H10 / (later Oura, HealthKit)
@@ -74,15 +73,11 @@ First Open Wearables build can take several minutes (Python + frontend images).
 | `gym` | wger only |
 | `grafana` | Grafana only (expects DBs already up) |
 | `full` | Wearables + wger + Grafana |
-| `media` | Optional exercises-dataset static browser (`:8090`) |
 
 ```bash
 docker compose --profile wearables up -d --build
 docker compose --profile gym up -d
 docker compose --profile full up -d --build
-# optional GIFs for demos (read license first):
-./scripts/fetch-exercises-dataset.sh
-docker compose --profile media up -d
 ```
 
 ## Demo walkthrough
@@ -106,11 +101,9 @@ Restore is documented in the script header. Schedule this from cron or your CT b
 - Not a medical device / not clinical advice.
 - Not a Strava/Garmin Connect replacement for social features.
 - Not “sync Open Wearables into wger” — that path is deliberately rejected (see architecture doc).
-- Not a replacement for wger’s exercise library — [exercises-dataset](docs/exercises-dataset.md) is optional demo media only (Gym visual terms on GIFs).
 
 ## Credits
 
 - [the-momentum/open-wearables](https://github.com/the-momentum/open-wearables)
 - [wger-project/wger](https://github.com/wger-project/wger) + [wger-project/docker](https://github.com/wger-project/docker) + [wger-project/flutter](https://github.com/wger-project/flutter)
-- [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) (optional; media © Gym visual)
 - Grafana Labs

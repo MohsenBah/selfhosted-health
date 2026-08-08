@@ -24,4 +24,3 @@ include:
   - path: ./compose/open-wearables.yaml
   - path: ./compose/wger.yaml
   - path: ./compose/grafana.yaml
-  - path: ./compose/exercises-media.yaml

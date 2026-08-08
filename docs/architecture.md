@@ -27,19 +27,14 @@
 - Provisioned datasources for both Postgres instances
 - Demo dashboard: gym volume + wearable daily metrics side by side (fill in once you have data)
 
-### Optional: exercises-dataset
-
-- [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) — GIFs + multilingual exercise metadata for **demo polish**
-- Profile `media` serves it on `:8090`; does not feed Open Wearables or replace wger’s `wger.de` exercise sync
-- Details / license: [exercises-dataset.md](exercises-dataset.md)
-
 ## Data ownership matrix
 
 | Data | Owner | Notes |
 |---|---|---|
 | Sleep, HRV, stress, SpO2, steps, readiness | Open Wearables | |
 | GPS activities / outdoor | Open Wearables (if you care) | Not a focus of this stack |
-| Strength sets, routines, nutrition | wger | Source of truth for the gym |
+| Strength sets, routines | wger | Source of truth for the gym |
+| Food / macros | Keep in Lose It (or similar) unless you deliberately move | wger has nutrition; don’t dual-write |
 | Body weight | Prefer Open Wearables (scale/watch) | Optional display copy in wger — do not dual-write |
 
 ## Threat / ops notes for demos
