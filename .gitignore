@@ -1,6 +1,8 @@
 vendor/open-wearables/
+vendor/exercises-dataset/
 !vendor/README.md
 !vendor/OPEN_WEARABLES_PIN.txt
+!vendor/EXERCISES_DATASET_PIN.txt
 open-wearables/.env
 wger/config/prod.env
 .env

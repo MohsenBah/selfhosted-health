@@ -1,6 +1,10 @@
 # Vendor directory
 
-`scripts/bootstrap.sh` clones [open-wearables](https://github.com/the-momentum/open-wearables)
-into `vendor/open-wearables` at a pinned revision recorded in `OPEN_WEARABLES_PIN.txt`.
+| Script | Clone | Pin file |
+|---|---|---|
+| `scripts/bootstrap.sh` | [open-wearables](https://github.com/the-momentum/open-wearables) → `open-wearables/` | `OPEN_WEARABLES_PIN.txt` |
+| `scripts/fetch-exercises-dataset.sh` | [exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) → `exercises-dataset/` | `EXERCISES_DATASET_PIN.txt` |
 
-That clone is gitignored — it is upstream source, not part of this glue repo.
+Clones are gitignored — upstream source, not part of this glue repo.
+
+Exercise **media** (images/GIFs) is © Gym visual; see `docs/exercises-dataset.md`.

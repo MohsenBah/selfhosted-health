@@ -1,0 +1,19 @@
+# Optional static browser for hasaneyldrm/exercises-dataset
+# Prerequisite: ./scripts/fetch-exercises-dataset.sh
+
+services:
+  exercises-media:
+    profiles: ["media"]
+    image: nginx:stable-alpine
+    container_name: sh-exercises-media
+    restart: unless-stopped
+    volumes:
+      - ../vendor/exercises-dataset:/usr/share/nginx/html:ro
+      - ../compose/exercises-media.nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${EXERCISES_MEDIA_PORT:-8090}:80"
+    networks: [health]
+    mem_limit: 64m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }

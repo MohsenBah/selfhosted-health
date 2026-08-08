@@ -45,6 +45,9 @@ Wait until:
    ```  
    “This dump is the asset. Apps are replaceable.”
 
+6. **Optional polish** — if you fetched the exercises dataset:  
+   http://localhost:8090 — animation GIFs for the gym story (say the Gym visual attribution out loud).
+
 ## Honest limitations (say them)
 
 - Open Wearables is young; pin commits for demos.
