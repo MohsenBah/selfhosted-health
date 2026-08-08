@@ -1,0 +1,30 @@
+apiVersion: 1
+datasources:
+  - name: openwearables
+    uid: openwearables
+    type: postgres
+    access: proxy
+    url: ow-db:5432
+    user: open-wearables
+    secureJsonData:
+      password: change-me-ow-db
+    jsonData:
+      database: open-wearables
+      sslmode: disable
+      postgresVersion: 1500
+    isDefault: true
+    editable: true
+
+  - name: wger
+    uid: wger
+    type: postgres
+    access: proxy
+    url: wger-db:5432
+    user: wger
+    secureJsonData:
+      password: change-me-wger-db
+    jsonData:
+      database: wger
+      sslmode: disable
+      postgresVersion: 1500
+    editable: true

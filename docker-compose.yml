@@ -1,0 +1,26 @@
+# Umbrella compose — profiles: wearables | gym | grafana | full
+# Usage: docker compose --profile full up -d --build
+#
+# Open Wearables source must exist at vendor/open-wearables (./scripts/bootstrap.sh).
+
+name: selfhosted-health
+
+networks:
+  health:
+    name: selfhosted-health
+    driver: bridge
+
+volumes:
+  ow_postgres:
+  ow_redis:
+  wger_postgres:
+  wger_redis:
+  wger_static:
+  wger_media:
+  wger_celery_beat:
+  grafana_data:
+
+include:
+  - path: ./compose/open-wearables.yaml
+  - path: ./compose/wger.yaml
+  - path: ./compose/grafana.yaml

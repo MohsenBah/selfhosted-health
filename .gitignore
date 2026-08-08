@@ -1,0 +1,10 @@
+vendor/open-wearables/
+!vendor/README.md
+!vendor/OPEN_WEARABLES_PIN.txt
+open-wearables/.env
+wger/config/prod.env
+.env
+backups/
+*.sql
+*.sql.gz
+.DS_Store

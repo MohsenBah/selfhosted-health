@@ -1,0 +1,55 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "How to use this dashboard",
+      "type": "text",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Self-hosted health — join layer\n\n- **openwearables** datasource → wearable time series / sleep / activities\n- **wger** datasource → workout logs & routines\n\nFill panels after you have data. Until then, Explore → pick a datasource → `SELECT 1` to prove connectivity.\n\nNo app-to-app sync by design — this dashboard *is* the join."
+      }
+    },
+    {
+      "title": "wger — recent workout sessions",
+      "description": "Adjust table/column names if your wger version differs (Explore the schema first).",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "wger" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id, date, comment FROM manager_workoutsession ORDER BY date DESC LIMIT 20;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Open Wearables — connectivity check",
+      "description": "Replace with real series queries once providers sync. Lists public tables as a smoke test.",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "openwearables" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY 1 LIMIT 40;",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["selfhosted-health", "demo"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30d", "to": "now" },
+  "timezone": "browser",
+  "title": "Health stack overview",
+  "uid": "selfhosted-health-overview",
+  "version": 1
+}

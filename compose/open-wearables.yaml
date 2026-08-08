@@ -1,0 +1,145 @@
+# Trimmed Open Wearables — built from vendor/open-wearables (bootstrap.sh).
+# Omits flower + svix. Webhooks stay off (OUTGOING_WEBHOOKS_ENABLED=false).
+
+services:
+  ow-db:
+    profiles: ["wearables", "full"]
+    image: postgres:18
+    container_name: sh-ow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${OW_DB_NAME:-open-wearables}
+      POSTGRES_USER: ${OW_DB_USER:-open-wearables}
+      POSTGRES_PASSWORD: ${OW_DB_PASSWORD:?set OW_DB_PASSWORD in .env}
+      TZ: ${TZ:-America/Toronto}
+    volumes:
+      - ow_postgres:/var/lib/postgresql
+    networks: [health]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    # Published for Grafana / ad-hoc SQL on LAN only — firewall this.
+    ports:
+      - "${OW_DB_PORT:-5432}:5432"
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ow-redis:
+    profiles: ["wearables", "full"]
+    image: redis:8
+    container_name: sh-ow-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - ow_redis:/data
+    networks: [health]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ow-app:
+    profiles: ["wearables", "full"]
+    build:
+      context: ../vendor/open-wearables/backend
+      dockerfile: Dockerfile
+    image: selfhosted-health/open-wearables-api:local
+    pull_policy: never
+    container_name: sh-ow-app
+    restart: unless-stopped
+    command: scripts/start/app.sh
+    env_file:
+      - ../open-wearables/.env
+    environment:
+      DB_HOST: ow-db
+      REDIS_HOST: ow-redis
+      OUTGOING_WEBHOOKS_ENABLED: "false"
+    depends_on:
+      ow-db:
+        condition: service_healthy
+      ow-redis:
+        condition: service_healthy
+    ports:
+      - "${OW_API_PORT:-8000}:8000"
+    networks: [health]
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ow-worker:
+    profiles: ["wearables", "full"]
+    image: selfhosted-health/open-wearables-api:local
+    pull_policy: never
+    container_name: sh-ow-worker
+    restart: unless-stopped
+    command: scripts/start/worker.sh
+    env_file:
+      - ../open-wearables/.env
+    environment:
+      DB_HOST: ow-db
+      REDIS_HOST: ow-redis
+      OUTGOING_WEBHOOKS_ENABLED: "false"
+    depends_on:
+      - ow-app
+      - ow-redis
+      - ow-db
+    networks: [health]
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ow-beat:
+    profiles: ["wearables", "full"]
+    image: selfhosted-health/open-wearables-api:local
+    pull_policy: never
+    container_name: sh-ow-beat
+    restart: unless-stopped
+    command: scripts/start/beat.sh
+    env_file:
+      - ../open-wearables/.env
+    environment:
+      DB_HOST: ow-db
+      REDIS_HOST: ow-redis
+      OUTGOING_WEBHOOKS_ENABLED: "false"
+    depends_on:
+      - ow-app
+      - ow-redis
+      - ow-db
+    networks: [health]
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ow-frontend:
+    profiles: ["wearables", "full"]
+    build:
+      context: ../vendor/open-wearables/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${OW_PUBLIC_API_URL:-http://localhost:8000}
+    image: selfhosted-health/open-wearables-ui:local
+    pull_policy: never
+    container_name: sh-ow-frontend
+    restart: unless-stopped
+    depends_on:
+      - ow-app
+    ports:
+      - "${OW_UI_PORT:-3000}:3000"
+    networks: [health]
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

@@ -1,0 +1,136 @@
+# wger gym stack — official images, PowerSync omitted for a lighter demo.
+# Static/media served by nginx. Flutter app uses the HTTP API.
+
+services:
+  wger-db:
+    profiles: ["gym", "full"]
+    image: postgres:15-alpine
+    container_name: sh-wger-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${WGER_DB_USER:-wger}
+      POSTGRES_PASSWORD: ${WGER_DB_PASSWORD:?set WGER_DB_PASSWORD in .env}
+      POSTGRES_DB: ${WGER_DB_NAME:-wger}
+      TZ: ${TZ:-America/Toronto}
+    volumes:
+      - wger_postgres:/var/lib/postgresql/data
+    networks: [health]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - "${WGER_DB_PORT:-5433}:5432"
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  wger-cache:
+    profiles: ["gym", "full"]
+    image: redis:7-alpine
+    container_name: sh-wger-cache
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - wger_redis:/data
+    networks: [health]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }
+
+  wger-web:
+    profiles: ["gym", "full"]
+    image: docker.io/wger/server:latest
+    container_name: sh-wger-web
+    restart: unless-stopped
+    env_file:
+      - ../wger/config/prod.env
+    environment:
+      TZ: ${TZ:-America/Toronto}
+    volumes:
+      - wger_static:/home/wger/static
+      - wger_media:/home/wger/media
+    depends_on:
+      wger-db:
+        condition: service_healthy
+      wger-cache:
+        condition: service_healthy
+    expose:
+      - "8000"
+    networks: [health]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
+      interval: 15s
+      timeout: 5s
+      start_period: 300s
+      retries: 8
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  wger-worker:
+    profiles: ["gym", "full"]
+    image: docker.io/wger/server:latest
+    container_name: sh-wger-worker
+    restart: unless-stopped
+    command: /start-worker
+    env_file:
+      - ../wger/config/prod.env
+    volumes:
+      - wger_media:/home/wger/media
+    depends_on:
+      wger-web:
+        condition: service_healthy
+    networks: [health]
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  wger-beat:
+    profiles: ["gym", "full"]
+    image: docker.io/wger/server:latest
+    container_name: sh-wger-beat
+    restart: unless-stopped
+    command: /start-beat
+    env_file:
+      - ../wger/config/prod.env
+    volumes:
+      - wger_celery_beat:/home/wger/beat/
+    depends_on:
+      - wger-worker
+    networks: [health]
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }
+
+  wger-nginx:
+    profiles: ["gym", "full"]
+    image: nginx:stable
+    container_name: sh-wger-nginx
+    restart: unless-stopped
+    depends_on:
+      wger-web:
+        condition: service_healthy
+    volumes:
+      - ../wger/config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - wger_static:/wger/static:ro
+      - wger_media:/wger/media:ro
+    ports:
+      - "${WGER_HTTP_PORT:-8080}:80"
+    networks: [health]
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }
