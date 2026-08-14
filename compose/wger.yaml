@@ -56,6 +56,8 @@ services:
       - ../wger/config/prod.env
     environment:
       TZ: ${TZ:-America/Toronto}
+      # First boot (migrate + collectstatic) is slow on small CTs; avoid gunicorn kill.
+      GUNICORN_CMD_ARGS: ${WGER_GUNICORN_CMD_ARGS:---workers 2 --threads 2 --worker-class gthread --timeout 240}
     volumes:
       - wger_static:/home/wger/static
       - wger_media:/home/wger/media
@@ -67,13 +69,14 @@ services:
     expose:
       - "8000"
     networks: [health]
+    # First start routinely exceeds 5 minutes on 2–4 GiB hosts (issue wger-project/docker#67).
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
-      interval: 15s
-      timeout: 5s
-      start_period: 300s
-      retries: 8
-    mem_limit: 1g
+      interval: 20s
+      timeout: 10s
+      start_period: 600s
+      retries: 12
+    # No hard mem_limit — a 1g cap on a 2 GiB CT OOMs during collectstatic alongside OW.
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

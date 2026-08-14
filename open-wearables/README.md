@@ -1,17 +1,17 @@
-# Env for the Open Wearables *app containers* (not root .env).
-# bootstrap.sh copies upstream backend/config/.env.example here, then applies
-# the overrides below. Keep DB_PASSWORD identical to OW_DB_PASSWORD in root .env.
+# `open-wearables/.env`
 
-# Minimal overrides you must set after bootstrap:
-#   SECRET_KEY=
-#   ADMIN_EMAIL=
-#   ADMIN_PASSWORD=
-#   DB_PASSWORD=   (same as OW_DB_PASSWORD)
+This file is **not** the root `.env`. Docker Compose uses root `.env` for ports and the Postgres *container* password. The Open Wearables **application** containers load **this** file.
 
-DB_HOST=ow-db
-REDIS_HOST=ow-redis
-OUTGOING_WEBHOOKS_ENABLED=false
-SENTRY_ENABLED=False
-ENVIRONMENT="local"
-FRONTEND_URL=http://localhost:3000
-CORS_ORIGINS=["http://localhost:3000"]
+Bootstrap creates it from upstream `backend/config/.env.example` and sets `DB_HOST=ow-db`, `REDIS_HOST=ow-redis`, disables Sentry/webhooks, and generates `SECRET_KEY`.
+
+## You must set
+
+| Variable | Rule |
+|---|---|
+| `ADMIN_EMAIL` | First admin login |
+| `ADMIN_PASSWORD` | First admin login |
+| `DB_PASSWORD` | **Identical** to `OW_DB_PASSWORD` in the repo-root `.env` |
+
+Re-run `./scripts/bootstrap.sh` after changing `OW_DB_PASSWORD` — it rewrites `DB_PASSWORD` here.
+
+Full setup (including **nginx :8080** for wger) lives in the **[root README](../README.md)**.

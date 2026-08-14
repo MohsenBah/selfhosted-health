@@ -13,7 +13,7 @@ docker compose --profile full up -d --build
 Wait until:
 
 - http://localhost:3000 — Open Wearables portal
-- http://localhost:8080 — wger
+- http://localhost:8080 — wger (**nginx**; not raw gunicorn :8000)
 - http://localhost:3001 — Grafana
 
 ## Script

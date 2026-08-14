@@ -42,11 +42,18 @@ if [[ ! -f "$OW_ENV" ]]; then
   # Force DB/Redis service names used by our compose
   sed -i 's/^DB_HOST=.*/DB_HOST=ow-db/' "$OW_ENV" || true
   sed -i 's/^REDIS_HOST=.*/REDIS_HOST=ow-redis/' "$OW_ENV" || true
+  # Seed a real SECRET_KEY (still edit ADMIN_* yourself)
+  OW_SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
+  if grep -q '^SECRET_KEY=' "$OW_ENV"; then
+    sed -i "s|^SECRET_KEY=.*|SECRET_KEY=${OW_SECRET}|" "$OW_ENV"
+  else
+    echo "SECRET_KEY=${OW_SECRET}" >> "$OW_ENV"
+  fi
   echo
-  echo "    EDIT open-wearables/.env — set SECRET_KEY, ADMIN_EMAIL, ADMIN_PASSWORD, DB_PASSWORD"
-  echo "    Generate SECRET_KEY:  python3 -c \"import secrets; print(secrets.token_urlsafe(64))\""
+  echo "    EDIT open-wearables/.env — set at least ADMIN_EMAIL and ADMIN_PASSWORD"
+  echo "    DB_PASSWORD is synced from OW_DB_PASSWORD in root .env when you re-run bootstrap"
 else
-  echo "==> Keeping existing $OW_ENV"
+  echo "==> Keeping existing $OW_ENV (passwords re-synced below)"
 fi
 
 # --- Root .env ---
@@ -71,11 +78,9 @@ OW_PASS="${OW_DB_PASSWORD:-change-me-ow-db}"
 OW_USER="${OW_DB_USER:-open-wearables}"
 OW_NAME="${OW_DB_NAME:-open-wearables}"
 
-if [[ ! -f "$WGER_ENV" ]]; then
-  echo "==> Writing $WGER_ENV"
-  SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
-  sed \
-    -e "s|^SECRET_KEY=.*|SECRET_KEY=${SECRET}|" \
+sync_wger_db_creds() {
+  local target="$1"
+  sed -i \
     -e "s|^POSTGRES_USER=.*|POSTGRES_USER=${WG_USER}|" \
     -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${WG_PASS}|" \
     -e "s|^POSTGRES_DB=.*|POSTGRES_DB=${WG_NAME}|" \
@@ -85,9 +90,19 @@ if [[ ! -f "$WGER_ENV" ]]; then
     -e "s|^DJANGO_DB_PASSWORD=.*|DJANGO_DB_PASSWORD=${WG_PASS}|" \
     -e "s|^TIME_ZONE=.*|TIME_ZONE=${TZ:-America/Toronto}|" \
     -e "s|^TZ=.*|TZ=${TZ:-America/Toronto}|" \
+    "$target"
+}
+
+if [[ ! -f "$WGER_ENV" ]]; then
+  echo "==> Writing $WGER_ENV"
+  SECRET="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  sed \
+    -e "s|^SECRET_KEY=.*|SECRET_KEY=${SECRET}|" \
     "$WGER_EXAMPLE" > "$WGER_ENV"
+  sync_wger_db_creds "$WGER_ENV"
 else
-  echo "==> Keeping existing $WGER_ENV"
+  echo "==> Syncing DB credentials in $WGER_ENV from root .env"
+  sync_wger_db_creds "$WGER_ENV"
 fi
 
 # --- Grafana datasource passwords (match root .env) ---
@@ -136,9 +151,10 @@ if [[ -f "$OW_ENV" ]] && [[ -n "${OW_DB_PASSWORD:-}" ]]; then
 fi
 
 echo
-echo "==> Next:"
-echo "    1. Edit .env (passwords) and open-wearables/.env (SECRET_KEY, ADMIN_*)"
-echo "    2. Match OW_DB_PASSWORD in .env with DB_PASSWORD in open-wearables/.env"
-echo "    3. docker compose --profile full up -d --build"
-echo "    4. Open http://localhost:3000  http://localhost:8080  http://localhost:3001"
-echo "    5. Read docs/demo-walkthrough.md"
+echo "==> Next (see README.md):"
+echo "    1. Edit root .env — set OW_DB_PASSWORD, WGER_DB_PASSWORD, GRAFANA_ADMIN_PASSWORD"
+echo "    2. Edit open-wearables/.env — set ADMIN_EMAIL + ADMIN_PASSWORD (re-run bootstrap to sync DB_PASSWORD)"
+echo "    3. If browsing by LAN IP, set SITE_URL / CSRF_TRUSTED_ORIGINS in wger/config/prod.env"
+echo "    4. docker compose --profile full up -d --build"
+echo "    5. Open Wearables UI :3000 | wger via nginx :8080 | Grafana :3001"
+echo "    6. First wger start can take ~10 min — check: docker compose logs -f wger-web"
