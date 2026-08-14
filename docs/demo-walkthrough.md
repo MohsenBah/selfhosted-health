@@ -45,7 +45,7 @@ Wait until:
    ```  
    “This dump is the asset. Apps are replaceable.”
 
-## Honest limitations (say them)
+## Honest limitations 
 
 - Open Wearables is young; pin commits for demos.
 - wger health-platform sync (Health Connect / Apple Health) is in progress upstream — not relied on here.
