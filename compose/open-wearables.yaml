@@ -134,6 +134,10 @@ services:
     pull_policy: never
     container_name: sh-ow-frontend
     restart: unless-stopped
+    # Runtime override (SSR injects window.__APP_CONFIG__.apiUrl) — no rebuild required
+    # when only the public API URL changes.
+    environment:
+      VITE_API_URL: ${OW_PUBLIC_API_URL:-http://localhost:8000}
     depends_on:
       - ow-app
     ports:
