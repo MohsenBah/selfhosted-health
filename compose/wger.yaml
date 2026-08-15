@@ -1,5 +1,5 @@
-# wger gym stack — official images, PowerSync omitted for a lighter demo.
-# Static/media served by nginx. Flutter app uses the HTTP API.
+# wger gym stack — official images + PowerSync (required by Flutter offline sync).
+# Static/media + /ps/ served by nginx.
 
 services:
   wger-db:
@@ -12,6 +12,14 @@ services:
       POSTGRES_PASSWORD: ${WGER_DB_PASSWORD:?set WGER_DB_PASSWORD in .env}
       POSTGRES_DB: ${WGER_DB_NAME:-wger}
       TZ: ${TZ:-America/Toronto}
+    # PowerSync replication requires logical WAL (official wger docker).
+    command:
+      [
+        "postgres",
+        "-c", "wal_level=logical",
+        "-c", "shared_buffers=256MB",
+        "-c", "max_connections=40",
+      ]
     volumes:
       - wger_postgres:/var/lib/postgresql/data
     networks: [health]
@@ -56,7 +64,6 @@ services:
       - ../wger/config/prod.env
     environment:
       TZ: ${TZ:-America/Toronto}
-      # First boot (migrate + collectstatic) is slow on small CTs; avoid gunicorn kill.
       GUNICORN_CMD_ARGS: ${WGER_GUNICORN_CMD_ARGS:---workers 2 --threads 2 --worker-class gthread --timeout 240}
     volumes:
       - wger_static:/home/wger/static
@@ -69,14 +76,40 @@ services:
     expose:
       - "8000"
     networks: [health]
-    # First start routinely exceeds 5 minutes on 2–4 GiB hosts (issue wger-project/docker#67).
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
       interval: 20s
       timeout: 10s
       start_period: 600s
       retries: 12
-    # No hard mem_limit — a 1g cap on a 2 GiB CT OOMs during collectstatic alongside OW.
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  wger-powersync:
+    profiles: ["gym", "full"]
+    image: docker.io/journeyapps/powersync-service:latest
+    container_name: sh-wger-powersync
+    restart: unless-stopped
+    command: ["start", "-r", "unified"]
+    env_file:
+      - ../wger/config/prod.env
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
+      # JWKS from Django (service name in this compose)
+      PS_JWKS_URL: http://wger-web:8000/api/v2/powersync-keys
+    volumes:
+      - ../wger/config/powersync:/config:ro
+    depends_on:
+      wger-db:
+        condition: service_healthy
+      wger-web:
+        condition: service_healthy
+    expose:
+      - "8080"
+      - "9090"
+    networks: [health]
+    mem_limit: 512m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -126,6 +159,8 @@ services:
     depends_on:
       wger-web:
         condition: service_healthy
+      wger-powersync:
+        condition: service_started
     volumes:
       - ../wger/config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - wger_static:/wger/static:ro

@@ -18,9 +18,9 @@
 
 ### wger (gym)
 
-- Django + Postgres + Redis + Celery + nginx
+- Django + Postgres + Redis + Celery + nginx + **PowerSync** (`/ps/` for Flutter)
 - Official `wger/server` images
-- PowerSync omitted in this showcase (mobile Flutter app talks HTTP API; PowerSync is optional offline sync)
+- PowerSync needs `wal_level=logical`, JWT keys, and `setup-powersync-storage` (see README / `scripts/setup-wger-powersync.sh`)
 
 ### Grafana
 

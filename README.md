@@ -7,7 +7,7 @@ A demo-ready stack that keeps your health and gym data on infrastructure you con
 | Layer | Component | Role |
 |---|---|---|
 | **Wearables hub** | [Open Wearables](https://github.com/the-momentum/open-wearables) | Ingest + normalize Garmin, Polar, Oura, Apple HealthKit, … |
-| **Gym tracker** | [wger](https://github.com/wger-project/wger) behind **nginx** | Daily lifting, routines + Flutter phone app |
+| **Gym tracker** | [wger](https://github.com/wger-project/wger) + nginx + **PowerSync** | Daily lifting + Flutter offline sync |
 | **Show layer** | Grafana | Join both Postgres databases — no app-to-app sync |
 | **Insurance** | `scripts/backup.sh` | Nightly `pg_dump` so a dead upstream is not a dead archive |
 
@@ -84,7 +84,7 @@ On a remote host, replace `localhost` with the host IP (e.g. `http://<host-ip>:8
 | Profile | What starts |
 |---|---|
 | `wearables` | Open Wearables only (trimmed: no Flower, no Svix) |
-| `gym` | wger only (db, redis, web, worker, beat, **nginx**) |
+| `gym` | wger only (db, redis, web, **powersync**, worker, beat, **nginx**) |
 | `grafana` | Grafana only (expects DBs already up) |
 | `full` | Wearables + wger + Grafana |
 
@@ -139,6 +139,25 @@ docker compose exec wger-cache redis-cli FLUSHALL
 ```
 
 Never put Postgres (`5432` / `5433`) on NPM.
+
+### Flutter app (PowerSync)
+
+The official wger **mobile app requires PowerSync** (not only the Django API). This compose includes `wger-powersync` and nginx location `/ps/`.
+
+One-time on a running gym stack:
+
+```bash
+# 1) JWT keys → paste into wger/config/prod.env (no quotes), recreate web
+docker compose --profile gym exec wger-web python3 manage.py generate-jwt-keys
+docker compose --profile gym up -d --force-recreate wger-web
+
+# 2) Storage role + start PowerSync (helper script)
+./scripts/setup-wger-powersync.sh
+```
+
+Also ensure `PS_DATABASE_URI` / `PS_STORAGE_PG_URI` in `prod.env` use host **`wger-db`** and your real DB password. After enabling `wal_level=logical`, recreate/restart **`wger-db`** once if it was created without that flag.
+
+In the Flutter app, server URL = your public **`SITE_URL`** (e.g. `https://gym.<your-domain>.com`). NPM must proxy **all paths** on that host (including `/ps/`) to `<host-ip>:8080`.
 
 ### Existing Grafana (skip compose Grafana)
 
