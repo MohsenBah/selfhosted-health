@@ -32,5 +32,6 @@ Do **not** put the wearable sync stack on a host that is off by default.
 
 ## Ingress
 
-- LAN reverse proxy (e.g. NPM) to UI/API/wger HTTP only.
+- LAN reverse proxy (e.g. **Nginx Proxy Manager**) to UI / API / wger HTTP only — see README “Nginx Proxy Manager”.
+- Compose still needs the **wger nginx** container for static/media; NPM sits in front of `:8080`.
 - Never publish Postgres `5432`/`5433` on the public proxy.
