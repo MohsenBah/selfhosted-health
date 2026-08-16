@@ -97,13 +97,13 @@ docker compose --profile full up -d --build
 
 ### Nginx Proxy Manager (optional)
 
-Compose already runs a **wger nginx sidecar** for static/media. **NPM** (or any reverse proxy) is only the **named HTTPS edge** in front of published ports — it does not replace that sidecar.
+Compose already runs a **wger nginx sidecar** for static/media + `/ps/`. **NPM** is only the named HTTPS edge — full checklist (Websockets, timeouts, recovery): **[docs/npm.md](docs/npm.md)**.
 
 Suggested proxy hosts (pick names on **`<your-domain>.com`**):
 
 | Proxy host (example) | Forward to | Notes |
 |---|---|---|
-| `https://gym.<your-domain>.com` | `http://<host-ip>:8080` | **wger** — usual candidate to publish |
+| `https://gym.<your-domain>.com` | `http://<host-ip>:8080` | **wger** — publish; **Websockets ON** for Flutter |
 | `https://wearables.<your-domain>.com` | `http://<host-ip>:3000` | OW UI — often keep LAN-only |
 | `https://wearables-api.<your-domain>.com` | `http://<host-ip>:8000` | OW API — required if OW UI is HTTPS |
 
@@ -118,27 +118,11 @@ FRONTEND_URL=https://wearables.<your-domain>.com
 CORS_ORIGINS=["https://wearables.<your-domain>.com"]
 ```
 
-Then recreate `ow-frontend` / `ow-app`.
+Then recreate `ow-frontend` / `ow-app`. Never put Postgres (`5432` / `5433`) on NPM.
 
-For wger behind NPM HTTPS, in `wger/config/prod.env`:
+### MCP (Cursor / Claude)
 
-```bash
-SITE_URL=https://gym.<your-domain>.com
-CSRF_TRUSTED_ORIGINS=https://gym.<your-domain>.com,http://<host-ip>:8080
-X_FORWARDED_PROTO_HEADER_SET=True
-USE_X_FORWARDED_HOST=True
-NUMBER_OF_PROXIES=2
-```
-
-Recreate `wger-web`, restart `wger-nginx`, then flush Redis so cached API image URLs become `https://…`:
-
-```bash
-docker compose --profile gym up -d --force-recreate wger-web
-docker restart sh-wger-nginx
-docker compose exec wger-cache redis-cli FLUSHALL
-```
-
-Never put Postgres (`5432` / `5433`) on NPM.
+Point [`wger-mcp`](https://github.com/wger-project/mcp-server) at your instance with a wger API key: **[docs/mcp.md](docs/mcp.md)**.
 
 ### Flutter app (PowerSync)
 
@@ -157,7 +141,7 @@ docker compose --profile gym up -d --force-recreate wger-web
 
 Also ensure `PS_DATABASE_URI` / `PS_STORAGE_PG_URI` in `prod.env` use host **`wger-db`** and your real DB password. After enabling `wal_level=logical`, recreate/restart **`wger-db`** once if it was created without that flag.
 
-In the Flutter app, server URL = your public **`SITE_URL`** (e.g. `https://gym.<your-domain>.com`). NPM must proxy **all paths** on that host (including `/ps/`) to `<host-ip>:8080`.
+In the Flutter app, server URL = your public **`SITE_URL`** (e.g. `https://gym.<your-domain>.com`). NPM must proxy **all paths** on that host (including `/ps/`) to `<host-ip>:8080` with **Websockets ON** — see **[docs/npm.md](docs/npm.md)**.
 
 ### Existing Grafana (skip compose Grafana)
 

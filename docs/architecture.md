@@ -21,6 +21,7 @@
 - Django + Postgres + Redis + Celery + nginx + **PowerSync** (`/ps/` for Flutter)
 - Official `wger/server` images
 - PowerSync needs `wal_level=logical`, JWT keys, and `setup-powersync-storage` (see README / `scripts/setup-wger-powersync.sh`)
+- HTTPS edge / Flutter: [npm.md](npm.md). AI tools: [mcp.md](mcp.md) (`wger-mcp` for Cursor / Claude)
 
 ### Grafana
 
